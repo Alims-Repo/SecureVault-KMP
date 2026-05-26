@@ -13,8 +13,10 @@ plugins {
     alias(libs.plugins.binaryCompatibilityValidator)
 }
 
-group = providers.gradleProperty("GROUP").get()
-version = providers.gradleProperty("VERSION_NAME").get()
+// Note: do NOT set `group`/`version` at the top level — the
+// `mavenPublishing { coordinates(...) }` block below propagates them to the
+// project. Assigning them eagerly here would finalise the plugin's
+// `groupId`/`version` properties and break `coordinates(...)`.
 
 kotlin {
     // Force every public declaration to carry an explicit visibility modifier.
