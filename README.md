@@ -21,12 +21,15 @@ val token: String? = vault.get("session")
 
 ## Install
 
-`secure-vault` is published to Maven Central.
+`secure-vault` is published to Maven Central. The Compose Multiplatform
+integration ships separately as `secure-vault-compose`.
 
 ```kotlin
 // build.gradle.kts
 dependencies {
     implementation("io.github.alims-repo:secure-vault:0.2.0")
+    // Optional — only if you use Compose Multiplatform:
+    implementation("io.github.alims-repo:secure-vault-compose:0.1.0")
 }
 ```
 
@@ -37,6 +40,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation("io.github.alims-repo:secure-vault:0.2.0")
+            implementation("io.github.alims-repo:secure-vault-compose:0.1.0")
         }
     }
 }
@@ -50,8 +54,9 @@ kotlin {
 | `iosArm64`           | Keychain Services                 |
 | `iosSimulatorArm64`  | Keychain Services                 |
 
-Common-side consumers depend on `secure-vault`; the matching platform
-artefact is selected by Gradle metadata automatically.
+Both artifacts (`secure-vault` and `secure-vault-compose`) ship the same
+target matrix. Common-side consumers depend on the artefact name; the matching
+platform variant is selected by Gradle metadata automatically.
 
 ## Usage
 
@@ -112,6 +117,35 @@ try {
   catch (e: VaultException.CryptoFailure)      { /* report */ }
   catch (e: VaultException.StorageUnavailable) { /* retry / surface */ }
 ```
+
+## Using with Compose Multiplatform
+
+Add the optional `secure-vault-compose` dependency for a small, opinionated
+Compose layer: a lifecycle-aware `rememberSecureVault(...)` factory, a
+`VaultState` sealed type so you render `Initializing`/`Ready`/`Failed`
+explicitly, and a `LocalSecureVault` `CompositionLocal`.
+
+```kotlin
+@Composable
+fun AppRoot() {
+    val state by rememberSecureVault("com.acme.auth")
+    when (val s = state) {
+        VaultState.Initializing -> SplashScreen()
+        is VaultState.Failed    -> ErrorScreen(s.reason)
+        is VaultState.Ready     -> ProvideSecureVault(s.vault) { HomeScreen() }
+    }
+}
+
+@Composable
+fun HomeScreen() {
+    val vault = LocalSecureVault.current   // available everywhere below ProvideSecureVault
+    // ... vault.put(...), vault.get(...)
+}
+```
+
+The underlying host is process-wide and keyed by `VaultConfig.namespace`, so
+calling `rememberSecureVault` from multiple composables with the same namespace
+returns the same vault and the master-key pre-warm runs **exactly once**.
 
 ## Threading
 

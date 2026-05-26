@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### `secure-vault-compose` 0.1.0 — 2026-05-26
+First release of the optional Compose Multiplatform integration, published
+separately as `io.github.alims-repo:secure-vault-compose`.
+
+#### Added
+- `VaultState` sealed interface (`Initializing` / `Ready(vault)` /
+  `Failed(reason)`) — surfaces the platform's master-key handshake as
+  explicit UI state.
+- `@Composable fun rememberSecureVault(config)` plus
+  `(namespace, accessibility)` convenience overload. Returns
+  `State<VaultState>`; the underlying host is a process-wide singleton
+  keyed by `VaultConfig.namespace`, pre-warmed on `Dispatchers.Default`
+  inside its constructor coroutine so the user's first interaction never
+  pays the Keystore cost.
+- `LocalSecureVault: ProvidableCompositionLocal<SecureVault>` with no
+  default value (clear error if read outside a provider scope).
+- `ProvideSecureVault(vault) { content }` helper.
+
+#### Notes
+- Runtime-only Compose dep (`compose.runtime`); the artifact does **not**
+  pull in Material or any UI library.
+- Independent SemVer track from the core `secure-vault` artifact —
+  Compose Multiplatform releases are frequent and decoupled from the
+  core library's cadence.
+
 ## [0.2.0] - 2026-05-26
 ### Added
 - Top-level `SecureVault(config: VaultConfig)` factory function with a
