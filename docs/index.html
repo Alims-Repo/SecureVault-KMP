@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SecureVault KMP — secrets storage for Kotlin Multiplatform</title>
+    <meta name="description" content="A small, coroutine-first Kotlin Multiplatform library for storing secrets on Android (EncryptedSharedPreferences) and iOS (Keychain). One API, two native backends." />
+    <meta name="theme-color" content="#0b0d12" />
+
+    <!-- Open Graph / social -->
+    <meta property="og:title" content="SecureVault KMP" />
+    <meta property="og:description" content="One API, two native backends. Encrypted storage for Android & iOS via Kotlin Multiplatform." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://alims-repo.github.io/SecureVault-KMP/" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --bg:           #0b0d12;
+            --bg-elev:      #11141b;
+            --bg-elev-2:    #161a23;
+            --border:       #1f2430;
+            --border-soft:  #262c3a;
+            --text:         #e6e8ee;
+            --text-dim:     #9aa3b2;
+            --text-faint:   #6b7385;
+            --accent:       #7c5cff;
+            --accent-2:     #4ad6c0;
+            --accent-soft:  rgba(124, 92, 255, 0.12);
+            --danger:       #ff6b6b;
+            --code-bg:      #0f1219;
+            --code-border:  #1c2230;
+
+            --radius:       14px;
+            --radius-sm:    8px;
+            --shadow-lg:    0 30px 80px -30px rgba(124, 92, 255, 0.35);
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ===== Background glow ===== */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% -10%, rgba(124, 92, 255, 0.18), transparent 50%),
+                radial-gradient(circle at 90% 10%, rgba(74, 214, 192, 0.10), transparent 45%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        main, header, footer { position: relative; z-index: 1; }
+
+        /* ===== Layout ===== */
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ===== Top nav ===== */
+        header {
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(11, 13, 18, 0.72);
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            text-decoration: none;
+        }
+        .brand-mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            display: grid;
+            place-items: center;
+            box-shadow: 0 6px 18px -6px rgba(124, 92, 255, 0.55);
+        }
+        .brand-mark svg { width: 16px; height: 16px; color: #0b0d12; }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            font-size: 14px;
+        }
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        .nav-links a:hover { color: var(--text); }
+        .nav-cta {
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: var(--bg-elev-2);
+            border: 1px solid var(--border-soft);
+            color: var(--text) !important;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-cta:hover { border-color: var(--accent); }
+        @media (max-width: 640px) {
+            .nav-links a:not(.nav-cta) { display: none; }
+        }
+
+        /* ===== Hero ===== */
+        .hero {
+            padding: 96px 0 64px;
+            text-align: center;
+        }
+        .badge-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            border: 1px solid rgba(124, 92, 255, 0.25);
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 28px;
+        }
+        .badge-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent-2);
+            box-shadow: 0 0 8px var(--accent-2);
+        }
+        h1.hero-title {
+            font-size: clamp(40px, 6vw, 64px);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            font-weight: 800;
+            margin: 0 0 20px;
+            background: linear-gradient(135deg, #fff 0%, #b2b8c8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-sub {
+            font-size: clamp(16px, 1.6vw, 19px);
+            color: var(--text-dim);
+            max-width: 640px;
+            margin: 0 auto 36px;
+        }
+        .hero-cta {
+            display: inline-flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 56px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 22px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 14.5px;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #5b3df0);
+            color: #fff;
+            box-shadow: var(--shadow-lg);
+        }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .btn-secondary {
+            background: var(--bg-elev);
+            color: var(--text);
+            border: 1px solid var(--border-soft);
+        }
+        .btn-secondary:hover { border-color: var(--accent); }
+
+        /* ===== Install card ===== */
+        .install-card {
+            max-width: 720px;
+            margin: 0 auto;
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: left;
+            overflow: hidden;
+            box-shadow: 0 20px 60px -30px rgba(0, 0, 0, 0.6);
+        }
+        .install-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-elev-2);
+        }
+        .install-tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-faint);
+            background: none;
+            border: none;
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.15s ease, background 0.15s ease;
+        }
+        .install-tab:hover { color: var(--text); }
+        .install-tab.active {
+            color: var(--text);
+            background: var(--bg-elev);
+            box-shadow: inset 0 -2px 0 var(--accent);
+        }
+        .install-body { position: relative; }
+        .install-body pre { margin: 0; }
+        .install-panel { display: none; }
+        .install-panel.active { display: block; }
+
+        /* ===== Code blocks ===== */
+        pre, code {
+            font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+        }
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: var(--radius-sm);
+            padding: 20px 22px;
+            overflow-x: auto;
+            font-size: 13.5px;
+            line-height: 1.65;
+            color: #e6e8ee;
+        }
+        pre.flush { border: none; border-radius: 0; }
+        code.inline {
+            font-size: 0.9em;
+            padding: 2px 6px;
+            border-radius: 5px;
+            background: var(--bg-elev-2);
+            border: 1px solid var(--border-soft);
+            color: var(--accent-2);
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-dim);
+            background: var(--bg-elev-2);
+            border: 1px solid var(--border-soft);
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+        .copy-btn.copied { color: var(--accent-2); border-color: var(--accent-2); }
+
+        /* Minimal syntax tokens */
+        .tk-key   { color: #c792ea; }
+        .tk-str   { color: #c3e88d; }
+        .tk-fun   { color: #82aaff; }
+        .tk-num   { color: #f78c6c; }
+        .tk-com   { color: #5f6b80; font-style: italic; }
+        .tk-type  { color: #ffcb6b; }
+        .tk-anno  { color: #ff5370; }
+
+        /* ===== Sections ===== */
+        section {
+            padding: 88px 0;
+            border-top: 1px solid var(--border);
+        }
+        .section-eyebrow {
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: 14px;
+        }
+        h2.section-title {
+            font-size: clamp(28px, 3.5vw, 38px);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            font-weight: 700;
+            margin: 0 0 16px;
+        }
+        .section-sub {
+            color: var(--text-dim);
+            font-size: 17px;
+            max-width: 620px;
+            margin: 0 0 48px;
+        }
+
+        /* ===== Feature grid ===== */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .feature {
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            transition: border-color 0.15s ease, transform 0.15s ease;
+        }
+        .feature:hover {
+            border-color: var(--border-soft);
+            transform: translateY(-2px);
+        }
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--accent-soft);
+            display: grid;
+            place-items: center;
+            margin-bottom: 16px;
+            color: var(--accent);
+        }
+        .feature-icon svg { width: 20px; height: 20px; }
+        .feature h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin: 0 0 6px;
+            letter-spacing: -0.01em;
+        }
+        .feature p {
+            color: var(--text-dim);
+            font-size: 14.5px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* ===== Two-col code section ===== */
+        .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            align-items: start;
+        }
+        .split > div { min-width: 0; }
+        .code-card {
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .code-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            background: var(--bg-elev-2);
+            border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            color: var(--text-dim);
+        }
+        .code-card-header .dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--border-soft);
+        }
+        .code-card-header .dot.red    { background: #ff5f56; }
+        .code-card-header .dot.yellow { background: #ffbd2e; }
+        .code-card-header .dot.green  { background: #27c93f; }
+        .code-card-header .filename { margin-left: 8px; }
+        @media (max-width: 760px) {
+            .split { grid-template-columns: 1fr; }
+        }
+
+        /* ===== API table ===== */
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .api-table th, .api-table td {
+            padding: 14px 18px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 14.5px;
+        }
+        .api-table th {
+            background: var(--bg-elev-2);
+            font-weight: 600;
+            color: var(--text-dim);
+            font-size: 12.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .api-table tr:last-child td { border-bottom: none; }
+        .api-table td:first-child {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-2);
+            white-space: nowrap;
+        }
+        .api-table td:last-child { color: var(--text-dim); }
+
+        /* ===== Footer ===== */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 48px 0 40px;
+            margin-top: 24px;
+            color: var(--text-faint);
+            font-size: 14px;
+        }
+        .footer-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+        .footer-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+        }
+        .footer-links a:hover { color: var(--text); }
+
+        /* ===== Misc ===== */
+        ::selection { background: rgba(124, 92, 255, 0.35); color: #fff; }
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-soft);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #2f3647; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <nav class="nav">
+            <a class="brand" href="#">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </span>
+                SecureVault <span style="color: var(--text-faint); font-weight: 500;">KMP</span>
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#install">Install</a>
+                <a href="#usage">Usage</a>
+                <a href="#api">API</a>
+                <a class="nav-cta" href="https://github.com/Alims-Repo/SecureVault-KMP" target="_blank" rel="noopener">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.7-3.88-1.54-3.88-1.54-.52-1.34-1.27-1.7-1.27-1.7-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.27-5.23-5.67 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.17a11 11 0 0 1 5.79 0c2.2-1.48 3.17-1.17 3.17-1.17.63 1.59.23 2.76.12 3.05.74.8 1.18 1.82 1.18 3.07 0 4.41-2.69 5.37-5.25 5.66.41.35.78 1.05.78 2.12v3.14c0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+                    GitHub
+                </a>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<main>
+
+    <!-- ============ HERO ============ -->
+    <section class="hero" style="border-top: none; padding-top: 80px;">
+        <div class="container">
+            <div class="badge-row">
+                <span class="badge-dot"></span>
+                v0.1.0 — Now on Maven Central
+            </div>
+            <h1 class="hero-title">Secrets storage,<br/>done right for KMP.</h1>
+            <p class="hero-sub">
+                A coroutine-first Kotlin Multiplatform library that wraps native secure storage —
+                <strong style="color: var(--text);">EncryptedSharedPreferences</strong> on Android
+                and <strong style="color: var(--text);">Keychain Services</strong> on iOS — behind one
+                tiny, suspendable API. No hand-rolled crypto.
+            </p>
+            <div class="hero-cta">
+                <a class="btn btn-primary" href="#install">
+                    Get started
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+                </a>
+                <a class="btn btn-secondary" href="https://github.com/Alims-Repo/SecureVault-KMP" target="_blank" rel="noopener">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.7-3.88-1.54-3.88-1.54-.52-1.34-1.27-1.7-1.27-1.7-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.27-5.23-5.67 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.17a11 11 0 0 1 5.79 0c2.2-1.48 3.17-1.17 3.17-1.17.63 1.59.23 2.76.12 3.05.74.8 1.18 1.82 1.18 3.07 0 4.41-2.69 5.37-5.25 5.66.41.35.78 1.05.78 2.12v3.14c0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+                    View on GitHub
+                </a>
+            </div>
+
+            <!-- Install card with tabs -->
+            <div class="install-card" id="install">
+                <div class="install-tabs" role="tablist">
+                    <button class="install-tab active" data-tab="kts" role="tab">build.gradle.kts</button>
+                    <button class="install-tab" data-tab="catalog" role="tab">libs.versions.toml</button>
+                    <button class="install-tab" data-tab="groovy" role="tab">build.gradle</button>
+                </div>
+                <div class="install-body">
+                    <button class="copy-btn" type="button" aria-label="Copy install snippet">Copy</button>
+
+                    <div class="install-panel active" data-panel="kts">
+<pre class="flush"><span class="tk-key">dependencies</span> {
+    <span class="tk-fun">implementation</span>(<span class="tk-str">"io.github.alimsrepo:secure-vault:0.1.0"</span>)
+}</pre>
+                    </div>
+
+                    <div class="install-panel" data-panel="catalog">
+<pre class="flush"><span class="tk-com"># gradle/libs.versions.toml</span>
+<span class="tk-key">[libraries]</span>
+<span class="tk-fun">secure-vault</span> = { <span class="tk-key">module</span> = <span class="tk-str">"io.github.alimsrepo:secure-vault"</span>, <span class="tk-key">version</span> = <span class="tk-str">"0.1.0"</span> }</pre>
+                    </div>
+
+                    <div class="install-panel" data-panel="groovy">
+<pre class="flush"><span class="tk-key">dependencies</span> {
+    <span class="tk-fun">implementation</span> <span class="tk-str">'io.github.alimsrepo:secure-vault:0.1.0'</span>
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section id="features">
+        <div class="container">
+            <div class="section-eyebrow">Why SecureVault</div>
+            <h2 class="section-title">Designed like a library you'd actually want to depend on.</h2>
+            <p class="section-sub">
+                Small surface, sealed errors, suspending I/O, explicit visibility — every public symbol earns its place.
+            </p>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <h3>OS-native crypto</h3>
+                    <p>No bespoke ciphers. AES-256-GCM via the Android Keystore on one side, Keychain Services on the other — you inherit OS guarantees, not custom risk.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 1 1-6.2-8.55"></path><path d="M21 4v6h-6"></path>
+                        </svg>
+                    </div>
+                    <h3>Coroutine-first</h3>
+                    <p>Every operation is <code class="inline">suspend</code> and dispatches onto the right I/O dispatcher per platform. No manual <code class="inline">withContext</code>, no blocked main threads.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path>
+                        </svg>
+                    </div>
+                    <h3>Sealed errors</h3>
+                    <p>One <code class="inline">VaultException</code> hierarchy: <code class="inline">InvalidKey</code>, <code class="inline">CryptoFailure</code>, <code class="inline">Tampered</code>, <code class="inline">StorageUnavailable</code>. Catch what matters, ignore platform noise.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 9h6v6H9z"></path>
+                        </svg>
+                    </div>
+                    <h3>Namespaced</h3>
+                    <p>Vaults are scoped per <code class="inline">VaultConfig.namespace</code>. Isolate auth tokens from feature flags, or one product from another in the same app.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 7h18M3 12h18M3 17h18"></path>
+                        </svg>
+                    </div>
+                    <h3>Tiny API</h3>
+                    <p>Six suspending methods total: <code class="inline">put</code>, <code class="inline">get</code>, <code class="inline">remove</code>, <code class="inline">contains</code>, <code class="inline">clear</code>, <code class="inline">keys</code>. That's the whole library.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 6L9 17l-5-5"></path>
+                        </svg>
+                    </div>
+                    <h3>ABI-stable</h3>
+                    <p>Public surface pinned with <code class="inline">binary-compatibility-validator</code>. Patch releases never break consumers — by construction.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ USAGE ============ -->
+    <section id="usage">
+        <div class="container">
+            <div class="section-eyebrow">Usage</div>
+            <h2 class="section-title">One API. Two native backends.</h2>
+            <p class="section-sub">
+                Write your business logic against <code class="inline">SecureVault</code> in <code class="inline">commonMain</code>. Build the right factory once per platform.
+            </p>
+
+            <div class="split">
+                <div>
+                    <div class="code-card">
+                        <div class="code-card-header">
+                            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                            <span class="filename">commonMain/AuthRepository.kt</span>
+                        </div>
+<pre class="flush"><span class="tk-key">class</span> <span class="tk-type">AuthRepository</span>(
+    <span class="tk-key">private val</span> vault: <span class="tk-type">SecureVault</span>,
+) {
+    <span class="tk-key">suspend fun</span> <span class="tk-fun">saveSession</span>(token: <span class="tk-type">String</span>) =
+        vault.<span class="tk-fun">put</span>(<span class="tk-str">"session"</span>, token)
+
+    <span class="tk-key">suspend fun</span> <span class="tk-fun">session</span>(): <span class="tk-type">String</span>? =
+        vault.<span class="tk-fun">get</span>(<span class="tk-str">"session"</span>)
+
+    <span class="tk-key">suspend fun</span> <span class="tk-fun">logout</span>() =
+        vault.<span class="tk-fun">remove</span>(<span class="tk-str">"session"</span>)
+}</pre>
+                    </div>
+                </div>
+                <div>
+                    <div class="code-card" style="margin-bottom: 20px;">
+                        <div class="code-card-header">
+                            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                            <span class="filename">androidMain/App.kt</span>
+                        </div>
+<pre class="flush"><span class="tk-key">class</span> <span class="tk-type">App</span> : <span class="tk-type">Application</span>() {
+    <span class="tk-key">override fun</span> <span class="tk-fun">onCreate</span>() {
+        <span class="tk-key">super</span>.<span class="tk-fun">onCreate</span>()
+        <span class="tk-key">val</span> vault = <span class="tk-type">SecureVaultFactory</span>(<span class="tk-key">this</span>)
+            .<span class="tk-fun">create</span>(<span class="tk-type">VaultConfig</span>(<span class="tk-str">"com.acme.auth"</span>))
+    }
+}</pre>
+                    </div>
+                    <div class="code-card">
+                        <div class="code-card-header">
+                            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                            <span class="filename">iosApp/ContentView.swift</span>
+                        </div>
+<pre class="flush"><span class="tk-key">let</span> vault = <span class="tk-type">SecureVaultFactory</span>().<span class="tk-fun">create</span>(
+    config: <span class="tk-type">VaultConfig</span>(
+        namespace: <span class="tk-str">"com.acme.auth"</span>,
+        accessibility: .<span class="tk-fun">afterFirstUnlock</span>
+    )
+)</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ API REFERENCE ============ -->
+    <section id="api">
+        <div class="container">
+            <div class="section-eyebrow">API at a glance</div>
+            <h2 class="section-title">Six methods. That's the whole contract.</h2>
+            <p class="section-sub">
+                All methods are <code class="inline">suspend</code> and may throw <code class="inline">VaultException</code>. Full KDoc shipped in the artefact's sources jar.
+            </p>
+
+            <table class="api-table">
+                <thead>
+                <tr><th>Signature</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                <tr><td>put(key, value)</td><td>Store a value, overwriting any previous one.</td></tr>
+                <tr><td>get(key)</td><td>Return the value for <code class="inline">key</code>, or <code class="inline">null</code> if absent.</td></tr>
+                <tr><td>remove(key)</td><td>Delete the entry. Idempotent — no-op if the key isn't present.</td></tr>
+                <tr><td>contains(key)</td><td>Return <code class="inline">true</code> if a value is currently stored under <code class="inline">key</code>.</td></tr>
+                <tr><td>clear()</td><td>Remove every entry inside this vault's namespace.</td></tr>
+                <tr><td>keys()</td><td>Snapshot of the current key set in this namespace.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ============ SUPPORT MATRIX ============ -->
+    <section id="targets">
+        <div class="container">
+            <div class="section-eyebrow">Supported targets</div>
+            <h2 class="section-title">Where it runs.</h2>
+            <p class="section-sub">More targets (JVM/Desktop, watchOS) are planned for v0.2 — see the changelog for the roadmap.</p>
+
+            <table class="api-table">
+                <thead>
+                <tr><th>Target</th><th>Backend</th></tr>
+                </thead>
+                <tbody>
+                <tr><td>android</td><td>EncryptedSharedPreferences (Android Keystore)</td></tr>
+                <tr><td>iosArm64</td><td>Keychain Services (<code class="inline">kSecClassGenericPassword</code>)</td></tr>
+                <tr><td>iosSimulatorArm64</td><td>Keychain Services (<code class="inline">kSecClassGenericPassword</code>)</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    <div class="container footer-grid">
+        <div>
+            <div class="brand" style="margin-bottom: 4px;">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </span>
+                SecureVault KMP
+            </div>
+            <div style="font-size: 13px;">© 2026 Alim Sourav · Apache-2.0</div>
+        </div>
+        <div class="footer-links">
+            <a href="https://github.com/Alims-Repo/SecureVault-KMP">GitHub</a>
+            <a href="https://central.sonatype.com/artifact/io.github.alimsrepo/secure-vault">Maven Central</a>
+            <a href="https://github.com/Alims-Repo/SecureVault-KMP/blob/main/CHANGELOG.md">Changelog</a>
+            <a href="https://github.com/Alims-Repo/SecureVault-KMP/blob/main/SECURITY.md">Security</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Tabs
+    document.querySelectorAll('.install-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const id = tab.dataset.tab;
+            document.querySelectorAll('.install-tab').forEach(t => t.classList.toggle('active', t === tab));
+            document.querySelectorAll('.install-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === id));
+        });
+    });
+
+    // Copy
+    const copyBtn = document.querySelector('.copy-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+            const active = document.querySelector('.install-panel.active pre');
+            if (!active) return;
+            try {
+                await navigator.clipboard.writeText(active.innerText);
+                copyBtn.textContent = 'Copied';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            } catch (_) {
+                copyBtn.textContent = 'Copy failed';
+                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
+
