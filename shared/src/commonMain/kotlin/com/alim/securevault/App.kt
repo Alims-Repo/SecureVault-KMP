@@ -35,7 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,8 +51,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.alimsrepo.secure.vault.SecureVault
 import io.github.alimsrepo.secure.vault.VaultException
+import io.github.alimsrepo.secure.vault.compose.ProvideSecureVault
 import io.github.alimsrepo.secure.vault.compose.VaultState
+import io.github.alimsrepo.secure.vault.compose.rememberSecureValue
 import io.github.alimsrepo.secure.vault.compose.rememberSecureVault
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /** UI status banner shown above the form after every vault operation. */
@@ -93,7 +96,9 @@ private fun SecureVaultApp(state: VaultState) {
                 when (state) {
                     VaultState.Initializing -> InitializingScreen(padding)
                     is VaultState.Failed -> FailedScreen(state.reason, padding)
-                    is VaultState.Ready -> VaultScreen(state.vault, padding)
+                    is VaultState.Ready -> ProvideSecureVault(state.vault) {
+                        VaultScreen(state.vault, padding)
+                    }
                 }
             }
         }
@@ -174,13 +179,12 @@ private fun VaultScreen(vault: SecureVault, contentPadding: PaddingValues) {
     var valueInput by remember { mutableStateOf("") }
     var status by remember { mutableStateOf<Status>(Status.Idle) }
     var busy by remember { mutableStateOf(false) }
-    var storedKeys by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    suspend fun refreshKeys() {
-        storedKeys = runCatching { vault.keys().sorted() }.getOrElse { emptyList() }
-    }
-
-    LaunchedEffect(Unit) { refreshKeys() }
+    // Reactive key list — no manual refresh, no explicit re-reads.
+    // Any put / remove / clear on the vault propagates here automatically.
+    val storedKeys by remember(vault) {
+        vault.observeKeys().map { it.sorted() }
+    }.collectAsState(initial = emptyList())
 
     fun run(label: String, block: suspend () -> String) {
         if (busy) return
@@ -199,7 +203,6 @@ private fun VaultScreen(vault: SecureVault, contentPadding: PaddingValues) {
             } catch (t: Throwable) {
                 Status.Error("$label failed: ${t.message ?: t::class.simpleName}")
             }
-            refreshKeys()
             busy = false
         }
     }
@@ -212,6 +215,8 @@ private fun VaultScreen(vault: SecureVault, contentPadding: PaddingValues) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         HeaderCard(busy = busy, status = status)
+
+        PinnedTokenCard()
 
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -297,6 +302,39 @@ private fun VaultScreen(vault: SecureVault, contentPadding: PaddingValues) {
             onClear = { run("clear") { vault.clear(); "Vault cleared" } },
             onPickKey = { keyInput = it },
         )
+    }
+}
+
+@Composable
+private fun PinnedTokenCard() {
+    // Two-way reactive bind to "demo.pinned" — every keystroke is written to
+    // the vault and the value is restored across process restarts. One line.
+    var pinned by rememberSecureValue("demo.pinned", default = "")
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                "rememberSecureValue demo",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                "Bound to key \"demo.pinned\" — typing persists; closing & reopening the app restores.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            OutlinedTextField(
+                value = pinned,
+                onValueChange = { pinned = it },
+                placeholder = { Text("Type anything…") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -438,4 +476,3 @@ private fun KeyRow(key: String, onClick: () -> Unit) {
         OutlinedButton(onClick = onClick) { Text("Use") }
     }
 }
-
