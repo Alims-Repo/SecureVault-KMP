@@ -6,9 +6,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### `secure-vault-compose` 0.1.0 — 2026-05-26
-First release of the optional Compose Multiplatform integration, published
-separately as `io.github.alims-repo:secure-vault-compose`.
+## [0.2.0] - 2026-05-26
+
+### Core (`secure-vault`)
+
+#### Added
+- Top-level `SecureVault(config: VaultConfig)` factory function with a
+  `SecureVault(namespace, accessibility)` convenience overload. The call
+  site is identical on Android and iOS — no `Context`, no factory class.
+- Android: auto-initialisation via
+  [`androidx.startup`](https://developer.android.com/topic/libraries/app-startup).
+  The library's manifest registers an `Initializer` that captures the
+  application `Context` before `Application.onCreate()` returns, so
+  consumers do not need to plumb a context themselves.
+- `SecureVault.initialize(context)` escape hatch for consumers who disable
+  the Startup integration.
+- `SecureVault.Companion` namespace on the interface so platform-specific
+  initialisation hooks (currently Android-only) live in a discoverable place.
+
+#### Changed
+- `androidx.startup:startup-runtime:1.2.0` added as a transitive dependency
+  on Android. ~5 KB minified.
+
+#### Deprecated
+- `SecureVaultFactory` (Android `SecureVaultFactory(context)`, iOS
+  `SecureVaultFactory()`). Replaced by the top-level `SecureVault(config)`
+  factory function. Will be removed in **0.3.0**. Source-compatible —
+  consumers see a warning with an auto-replacement.
+
+#### Migration
+```diff
+- val factory = SecureVaultFactory(context)
+- val vault = factory.create(VaultConfig("com.acme.auth"))
++ val vault = SecureVault("com.acme.auth")
+```
+
+### Compose integration (`secure-vault-compose`) — new
+
+Optional Compose Multiplatform helpers, published separately as
+`io.github.alims-repo:secure-vault-compose`. Both artifacts share the same
+version line going forward — tag once, publish both.
 
 #### Added
 - `VaultState` sealed interface (`Initializing` / `Ready(vault)` /
@@ -27,41 +64,6 @@ separately as `io.github.alims-repo:secure-vault-compose`.
 #### Notes
 - Runtime-only Compose dep (`compose.runtime`); the artifact does **not**
   pull in Material or any UI library.
-- Independent SemVer track from the core `secure-vault` artifact —
-  Compose Multiplatform releases are frequent and decoupled from the
-  core library's cadence.
-
-## [0.2.0] - 2026-05-26
-### Added
-- Top-level `SecureVault(config: VaultConfig)` factory function with a
-  `SecureVault(namespace, accessibility)` convenience overload. The call
-  site is identical on Android and iOS — no `Context`, no factory class.
-- Android: auto-initialisation via
-  [`androidx.startup`](https://developer.android.com/topic/libraries/app-startup).
-  The library's manifest registers an `Initializer` that captures the
-  application `Context` before `Application.onCreate()` returns, so
-  consumers do not need to plumb a context themselves.
-- `SecureVault.initialize(context)` escape hatch for consumers who disable
-  the Startup integration.
-- `SecureVault.Companion` namespace on the interface so platform-specific
-  initialisation hooks (currently Android-only) live in a discoverable place.
-
-### Changed
-- `androidx.startup:startup-runtime:1.2.0` added as a transitive dependency
-  on Android. ~5 KB minified.
-
-### Deprecated
-- `SecureVaultFactory` (Android `SecureVaultFactory(context)`, iOS
-  `SecureVaultFactory()`). Replaced by the top-level `SecureVault(config)`
-  factory function. Will be removed in **0.3.0**. Source-compatible —
-  consumers see a warning with an auto-replacement.
-
-### Migration
-```diff
-- val factory = SecureVaultFactory(context)
-- val vault = factory.create(VaultConfig("com.acme.auth"))
-+ val vault = SecureVault("com.acme.auth")
-```
 
 ## [0.1.0] - 2026-05-26
 ### Added

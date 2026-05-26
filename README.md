@@ -29,7 +29,7 @@ integration ships separately as `secure-vault-compose`.
 dependencies {
     implementation("io.github.alims-repo:secure-vault:0.2.0")
     // Optional — only if you use Compose Multiplatform:
-    implementation("io.github.alims-repo:secure-vault-compose:0.1.0")
+    implementation("io.github.alims-repo:secure-vault-compose:0.2.0")
 }
 ```
 
@@ -40,7 +40,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation("io.github.alims-repo:secure-vault:0.2.0")
-            implementation("io.github.alims-repo:secure-vault-compose:0.1.0")
+            implementation("io.github.alims-repo:secure-vault-compose:0.2.0")
         }
     }
 }
