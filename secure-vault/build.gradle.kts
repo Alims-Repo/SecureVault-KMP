@@ -13,11 +13,6 @@ plugins {
     alias(libs.plugins.binaryCompatibilityValidator)
 }
 
-// Note: do NOT set `group`/`version` at the top level — the
-// `mavenPublishing { coordinates(...) }` block below propagates them to the
-// project. Assigning them eagerly here would finalise the plugin's
-// `groupId`/`version` properties and break `coordinates(...)`.
-
 kotlin {
     // Force every public declaration to carry an explicit visibility modifier.
     explicitApi = ExplicitApiMode.Strict
@@ -120,6 +115,3 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
     signAllPublications()
 }
-
-// Binary-compatibility validator pins the public ABI under /api.
-// Run `./gradlew :secure-vault:apiDump` after intentional API changes.
