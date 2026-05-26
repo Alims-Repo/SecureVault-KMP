@@ -51,6 +51,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.alimsrepo.secure.vault.SecureVault
 import io.github.alimsrepo.secure.vault.VaultException
+import io.github.alimsrepo.secure.vault.compose.VaultState
+import io.github.alimsrepo.secure.vault.compose.rememberSecureVault
 import kotlinx.coroutines.launch
 
 /** UI status banner shown above the form after every vault operation. */
@@ -63,7 +65,7 @@ private sealed interface Status {
 @Composable
 @Preview
 fun App() {
-    val state by rememberVaultState()
+    val state by rememberSecureVault("com.alim.securevault.sample")
     SecureVaultApp(state)
 }
 

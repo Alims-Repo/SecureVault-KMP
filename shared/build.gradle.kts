@@ -46,6 +46,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
             implementation(project(":secure-vault"))
+            implementation(project(":secure-vault-compose"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
