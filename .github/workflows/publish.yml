@@ -32,7 +32,7 @@ jobs:
         # SIGNING_KEY = base64-encoded armored private key (avoids multiline env-var issues)
         run: |
           export ORG_GRADLE_PROJECT_signingInMemoryKey=$(echo "$SIGNING_KEY_B64" | base64 -d)
-          ./gradlew :crash-guard:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+          ./gradlew :secure-vault:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
