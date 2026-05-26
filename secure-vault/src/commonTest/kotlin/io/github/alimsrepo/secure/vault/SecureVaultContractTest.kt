@@ -6,6 +6,10 @@
  */
 package io.github.alimsrepo.secure.vault
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -89,5 +93,78 @@ internal abstract class SecureVaultContractTest {
         assertFailsWith<VaultException.InvalidKey> { v.contains("") }
         assertFailsWith<VaultException.InvalidKey> { v.remove("") }
     }
-}
 
+    // ------------------------------------------------------------------
+    // Observability (since 0.3.0)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun observe_emits_current_value_immediately() = runTest {
+        val v = vault()
+        v.put("k", "v0")
+        assertEquals("v0", v.observe("k").first())
+    }
+
+    @Test
+    fun observe_emits_null_for_unknown_key() = runTest {
+        assertNull(vault().observe("missing").first())
+    }
+
+    /**
+     * The reactivity contract: a write performed *after* an observer has
+     * subscribed must be visible to that observer without an explicit re-read.
+     */
+    @Test
+    fun observer_sees_writes_without_explicit_reread() = runTest {
+        val v = vault()
+        v.put("k", "v0")
+
+        val collector = async {
+            v.observe("k").take(3).toList()
+        }
+        // Give the observer a chance to subscribe and emit the initial value.
+        // runTest's virtual clock advances eagerly between coroutines, so a
+        // single yield via put() is enough.
+        v.put("k", "v1")
+        v.put("k", "v2")
+
+        assertEquals(listOf("v0", "v1", "v2"), collector.await())
+    }
+
+    @Test
+    fun observe_emits_null_after_remove() = runTest {
+        val v = vault()
+        v.put("k", "v")
+        val collector = async { v.observe("k").take(2).toList() }
+        v.remove("k")
+        assertEquals(listOf("v", null), collector.await())
+    }
+
+    @Test
+    fun observe_emits_null_after_clear() = runTest {
+        val v = vault()
+        v.put("k", "v")
+        val collector = async { v.observe("k").take(2).toList() }
+        v.clear()
+        assertEquals(listOf("v", null), collector.await())
+    }
+
+    @Test
+    fun observe_keys_reflects_mutations() = runTest {
+        val v = vault()
+        val collector = async { v.observeKeys().take(3).toList() }
+        v.put("a", "1")
+        v.put("b", "2")
+        assertEquals(
+            listOf(emptySet(), setOf("a"), setOf("a", "b")),
+            collector.await(),
+        )
+    }
+
+    @Test
+    fun observe_rejects_blank_key_on_collect() = runTest {
+        assertFailsWith<VaultException.InvalidKey> {
+            vault().observe("").first()
+        }
+    }
+}

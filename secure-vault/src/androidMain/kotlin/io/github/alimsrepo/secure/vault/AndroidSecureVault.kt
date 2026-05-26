@@ -12,6 +12,11 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import io.github.alimsrepo.secure.vault.internal.requireValidKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -102,6 +107,31 @@ internal class AndroidSecureVault(
         runCatchingStorage { prefs().all.keys.toSet() }
     }
 
+    override fun observe(key: String): Flow<String?> = callbackFlow {
+        requireValidKey(key)
+        val sp = prefs()
+        // SharedPreferences listeners are held weakly — keep a hard reference here.
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, changedKey ->
+            // `changedKey == null` is fired by clear(); treat it as "this key changed too".
+            if (changedKey == null || changedKey == key) {
+                trySend(runCatching { p.getString(key, null) }.getOrNull())
+            }
+        }
+        trySend(runCatchingStorage { sp.getString(key, null) })
+        sp.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { sp.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged().flowOn(Dispatchers.IO)
+
+    override fun observeKeys(): Flow<Set<String>> = callbackFlow {
+        val sp = prefs()
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, _ ->
+            trySend(runCatching { p.all.keys.toSet() }.getOrDefault(emptySet()))
+        }
+        trySend(runCatchingStorage { sp.all.keys.toSet() })
+        sp.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { sp.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged().flowOn(Dispatchers.IO)
+
     /**
      * Translates platform exceptions into [VaultException] subtypes. Kept inline
      * so we never leak `java.*` types across the public API.
@@ -122,4 +152,3 @@ internal class AndroidSecureVault(
         const val PREFIX = "secure_vault__"
     }
 }
-
