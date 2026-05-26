@@ -72,11 +72,12 @@ mavenPublishing {
         ),
     )
 
-    coordinates(
-        groupId = providers.gradleProperty("GROUP").get(),
-        artifactId = "secure-vault",
-        version = providers.gradleProperty("VERSION_NAME").get(),
-    )
+    // Coordinates intentionally NOT set here — vanniktech reads GROUP,
+    // POM_ARTIFACT_ID and VERSION_NAME from gradle.properties automatically.
+    // Calling coordinates(...) on AGP 9.x races with the Android KMP library
+    // plugin, which finalises groupId early when registering the AAR
+    // publication, producing:
+    //   "property 'groupId$plugin' is final and cannot be changed any further".
 
     pom {
         name.set("SecureVault KMP")
