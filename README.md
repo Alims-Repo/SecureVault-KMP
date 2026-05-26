@@ -27,9 +27,9 @@ integration ships separately as `secure-vault-compose`.
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.alims-repo:secure-vault:0.2.0")
+    implementation("io.github.alims-repo:secure-vault:0.3.0")
     // Optional — only if you use Compose Multiplatform:
-    implementation("io.github.alims-repo:secure-vault-compose:0.2.0")
+    implementation("io.github.alims-repo:secure-vault-compose:0.3.0")
 }
 ```
 
@@ -39,8 +39,8 @@ KMP source set wiring:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.alims-repo:secure-vault:0.2.0")
-            implementation("io.github.alims-repo:secure-vault-compose:0.2.0")
+            implementation("io.github.alims-repo:secure-vault:0.3.0")
+            implementation("io.github.alims-repo:secure-vault-compose:0.3.0")
         }
     }
 }
@@ -70,6 +70,9 @@ class AuthRepository(private val vault: SecureVault) {
     suspend fun session(): String? = vault.get("session")
 
     suspend fun logout() = vault.remove("session")
+
+    /** Hot flow: re-emits whenever the session is written, removed, or cleared. */
+    fun sessionFlow(): Flow<String?> = vault.observe("session")
 }
 ```
 
@@ -146,6 +149,20 @@ fun HomeScreen() {
 The underlying host is process-wide and keyed by `VaultConfig.namespace`, so
 calling `rememberSecureVault` from multiple composables with the same namespace
 returns the same vault and the master-key pre-warm runs **exactly once**.
+
+#### One-line reactive binding
+
+Inside a `ProvideSecureVault` subtree, any composable can bind a single key
+to a `MutableState` with `rememberSecureValue`. Reads track the vault via
+`observe(key)`; writes propagate back through `put(key, value)`.
+
+```kotlin
+@Composable
+fun LoginScreen() {
+    var token by rememberSecureValue("auth.token", default = "")
+    OutlinedTextField(value = token, onValueChange = { token = it })
+}
+```
 
 ## Threading
 
