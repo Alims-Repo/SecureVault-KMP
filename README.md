@@ -11,8 +11,7 @@ A small, coroutine-first Kotlin Multiplatform library for storing secrets on
 cryptography.
 
 ```kotlin
-val vault = SecureVaultFactory(context /* Android only */)
-    .create(VaultConfig(namespace = "com.acme.auth"))
+val vault = SecureVault("com.acme.auth")
 
 vault.put("session", "eyJhbGciOiJIUzI1NiJ9…")
 val token: String? = vault.get("session")
@@ -27,7 +26,7 @@ val token: String? = vault.get("session")
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.alims-repo:secure-vault:0.1.0")
+    implementation("io.github.alims-repo:secure-vault:0.2.0")
 }
 ```
 
@@ -37,7 +36,7 @@ KMP source set wiring:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.alims-repo:secure-vault:0.1.0")
+            implementation("io.github.alims-repo:secure-vault:0.2.0")
         }
     }
 }
@@ -71,25 +70,33 @@ class AuthRepository(private val vault: SecureVault) {
 
 ### Android entry point
 
+No `Context` plumbing — the library captures the application Context via
+[`androidx.startup`](https://developer.android.com/topic/libraries/app-startup)
+before `Application.onCreate()` returns.
+
 ```kotlin
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        val vault = SecureVaultFactory(this)
-            .create(VaultConfig(namespace = "com.acme.auth"))
-        // pass `vault` to your DI graph
+        // Anywhere from here on:
+        val vault = SecureVault("com.acme.auth")
     }
 }
+```
+
+If you have explicitly disabled `androidx.startup` for SecureVault's
+initializer, supply the context manually:
+
+```kotlin
+SecureVault.initialize(applicationContext)
 ```
 
 ### iOS entry point (Swift)
 
 ```swift
-let vault = SecureVaultFactory().create(
-    config: VaultConfig(
-        namespace: "com.acme.auth",
-        accessibility: .afterFirstUnlock
-    )
+let vault = SecureVaultsKt.SecureVault(
+    namespace: "com.acme.auth",
+    accessibility: .afterFirstUnlock
 )
 ```
 
