@@ -17,3 +17,7 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Dokka-generated API reference. Built by CI from main and deployed to
+# GitHub Pages — never committed by hand.
+docs/api/
