@@ -1,6 +1,6 @@
 # SecureVault KMP
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.alimsrepo/secure-vault?style=flat-square)](https://central.sonatype.com/artifact/io.github.alimsrepo/secure-vault)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.alims-repo/secure-vault?style=flat-square)](https://central.sonatype.com/artifact/io.github.alims-repo/secure-vault)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.3-blueviolet?style=flat-square&logo=kotlin)](https://kotlinlang.org)
 [![Targets](https://img.shields.io/badge/targets-Android%20%7C%20iOS-success?style=flat-square)](#supported-targets)
@@ -27,7 +27,7 @@ val token: String? = vault.get("session")
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.alimsrepo:secure-vault:0.1.0")
+    implementation("io.github.alims-repo:secure-vault:0.1.0")
 }
 ```
 
@@ -37,7 +37,7 @@ KMP source set wiring:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.alimsrepo:secure-vault:0.1.0")
+            implementation("io.github.alims-repo:secure-vault:0.1.0")
         }
     }
 }
@@ -140,4 +140,3 @@ Licensed under the Apache License, Version 2.0.
 You may obtain a copy of the License at
     https://www.apache.org/licenses/LICENSE-2.0
 ```
-

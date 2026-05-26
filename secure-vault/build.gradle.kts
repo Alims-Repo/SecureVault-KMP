@@ -87,7 +87,7 @@ mavenPublishing {
 
         developers {
             developer {
-                id.set("alimsrepo")
+                id.set("alims-repo")
                 name.set("Alim Sourav")
                 email.set("sourav.0.alim@gmail.com")
                 url.set("https://github.com/Alims-Repo")
