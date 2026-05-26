@@ -4,13 +4,16 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  */
-@file:JvmName("SecureVaults")
-
 package io.github.alimsrepo.secure.vault
 
 import android.content.Context
 import io.github.alimsrepo.secure.vault.internal.SecureVaultStartup
-import kotlin.jvm.JvmName
+
+// NOTE: do *not* re-declare `@file:JvmName("SecureVaults")` here. The expect
+// declaration in commonMain already pins the Java facade name to `SecureVaults`
+// and the actual function inherits it. Duplicating the annotation on this file
+// makes K2 emit two source files into the same JVM class and fail with
+// "Duplicate JVM class name 'SecureVaults'".
 
 /** Android `actual` for the top-level [SecureVault] factory. */
 public actual fun SecureVault(config: VaultConfig): SecureVault =

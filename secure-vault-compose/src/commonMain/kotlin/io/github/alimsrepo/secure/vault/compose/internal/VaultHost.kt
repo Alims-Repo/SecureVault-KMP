@@ -9,6 +9,8 @@ package io.github.alimsrepo.secure.vault.compose.internal
 import io.github.alimsrepo.secure.vault.SecureVault
 import io.github.alimsrepo.secure.vault.VaultConfig
 import io.github.alimsrepo.secure.vault.compose.VaultState
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,20 +54,31 @@ internal class VaultHost(build: () -> SecureVault) {
  * One [VaultHost] per [VaultConfig.namespace]. Multiple `rememberSecureVault`
  * calls with the same namespace share the same host (and therefore the same
  * pre-warm, the same Ready instance) for the life of the process.
+ *
+ * Updates use a lock-free CAS loop over an immutable map. `kotlin.synchronized`
+ * is JVM-only and unavailable on Kotlin/Native, so we lean on the multiplatform
+ * [AtomicReference] from `kotlin.concurrent.atomics` (experimental in Kotlin
+ * 2.1+; opt-in scoped to this object). On a rare race two callers may each
+ * build a [VaultHost]; only the winner is published — the loser becomes garbage
+ * and its background warm-up coroutine, whose scope is then unreachable, is
+ * reclaimed.
  */
+@OptIn(ExperimentalAtomicApi::class)
 internal object VaultHostRegistry {
 
-    private val hosts = mutableMapOf<String, VaultHost>()
-    private val lock = Any()
+    private val hosts: AtomicReference<Map<String, VaultHost>> =
+        AtomicReference(emptyMap())
 
     fun acquire(config: VaultConfig, build: () -> SecureVault): VaultHost {
         // Validate config (will throw `IllegalArgumentException` on invalid namespace).
         val key = config.namespace
-        synchronized(lock) {
-            hosts[key]?.let { return it }
+        while (true) {
+            val current = hosts.load()
+            current[key]?.let { return it }
             val host = VaultHost(build)
-            hosts[key] = host
-            return host
+            val updated = current + (key to host)
+            if (hosts.compareAndSet(current, updated)) return host
+            // Lost the race — drop our `host` on the floor and retry.
         }
     }
 }
