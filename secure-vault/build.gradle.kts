@@ -55,6 +55,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.security.crypto)
+            implementation(libs.androidx.startup.runtime)
             implementation(libs.kotlinx.coroutines.android)
         }
     }

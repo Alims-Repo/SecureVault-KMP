@@ -85,5 +85,16 @@ public interface SecureVault {
      */
     @Throws(VaultException::class, CancellationException::class)
     public suspend fun keys(): Set<String>
+
+    /**
+     * Companion namespace for platform-specific initialisation hooks.
+     *
+     * On commonMain it is empty; platforms may add extension functions
+     * (e.g. `SecureVault.initialize(context)` on Android). This keeps
+     * platform-only call sites discoverable while leaving shared code clean.
+     *
+     * @since 0.2.0
+     */
+    public companion object
 }
 

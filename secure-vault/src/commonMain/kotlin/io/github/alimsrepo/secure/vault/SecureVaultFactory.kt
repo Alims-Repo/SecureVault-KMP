@@ -12,30 +12,19 @@ package io.github.alimsrepo.secure.vault
 /**
  * Platform entry point for building [SecureVault] instances.
  *
- * The `actual` declaration on each platform supplies whatever environment the
- * native backend needs (e.g. an Android `Context`) so that common code can
- * stay platform-agnostic.
- *
- * ### Android
- * ```kotlin
- * val factory = SecureVaultFactory(context)
- * val vault   = factory.create(VaultConfig(namespace = "com.acme.auth"))
- * ```
- *
- * ### iOS (Kotlin)
- * ```kotlin
- * val vault = SecureVaultFactory().create(VaultConfig(namespace = "com.acme.auth"))
- * ```
- *
- * ### iOS (Swift)
- * ```swift
- * let vault = SecureVaultFactory().create(
- *     config: VaultConfig(namespace: "com.acme.auth", accessibility: .afterFirstUnlock)
- * )
- * ```
- *
  * @since 0.1.0
  */
+@Deprecated(
+    message = "Use the top-level SecureVault(config) factory function. " +
+        "On Android the application Context is captured automatically by " +
+        "androidx.startup — no factory needed. SecureVaultFactory will be " +
+        "removed in 0.3.0.",
+    replaceWith = ReplaceWith(
+        "SecureVault(config)",
+        "io.github.alimsrepo.secure.vault.SecureVault",
+    ),
+    level = DeprecationLevel.WARNING,
+)
 public expect class SecureVaultFactory {
 
     /**
