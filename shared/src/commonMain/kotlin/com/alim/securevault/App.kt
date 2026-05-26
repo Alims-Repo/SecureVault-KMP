@@ -63,13 +63,13 @@ private sealed interface Status {
 @Composable
 @Preview
 fun App() {
-    val vault = rememberSampleVault()
-    SecureVaultApp(vault)
+    val state by rememberVaultState()
+    SecureVaultApp(state)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SecureVaultApp(vault: SecureVault) {
+private fun SecureVaultApp(state: VaultState) {
     MaterialTheme(colorScheme = darkColorScheme()) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Scaffold(
@@ -88,7 +88,77 @@ private fun SecureVaultApp(vault: SecureVault) {
                 },
                 contentWindowInsets = WindowInsets.safeContent,
             ) { padding ->
-                VaultScreen(vault = vault, contentPadding = padding)
+                when (state) {
+                    VaultState.Initializing -> InitializingScreen(padding)
+                    is VaultState.Failed -> FailedScreen(state.reason, padding)
+                    is VaultState.Ready -> VaultScreen(state.vault, padding)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InitializingScreen(contentPadding: PaddingValues) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(strokeWidth = 3.dp)
+            Spacer(Modifier.size(16.dp))
+            Text(
+                "Unlocking secure storage…",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(4.dp))
+            Text(
+                "First launch derives a Keystore master key.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FailedScreen(reason: String, contentPadding: PaddingValues) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    "Vault unavailable",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    reason,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Spacer(Modifier.size(12.dp))
+                Text(
+                    "This usually means the Keystore was reset by the OS. " +
+                        "Reinstalling the app or clearing storage will recover.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
             }
         }
     }

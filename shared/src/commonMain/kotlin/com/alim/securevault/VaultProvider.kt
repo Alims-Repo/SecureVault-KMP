@@ -1,15 +1,15 @@
 package com.alim.securevault
 
 import androidx.compose.runtime.Composable
-import io.github.alimsrepo.secure.vault.SecureVault
+import androidx.compose.runtime.State
 
 /**
- * Composable factory for a [SecureVault] suitable for the sample app.
+ * Returns the current [VaultState] for the process-wide sample vault.
  *
- * Each platform supplies whatever environment its native backend needs
- * (Android: an `applicationContext` resolved from `LocalContext`; iOS: nothing,
- * the Keychain is process-wide).
+ * The [VaultHost] is owned at the platform layer (Application-scoped on
+ * Android, process-global on iOS) so vault construction happens *exactly
+ * once* per process — not once per composition.
  */
 @Composable
-internal expect fun rememberSampleVault(): SecureVault
+internal expect fun rememberVaultState(): State<VaultState>
 
