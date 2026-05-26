@@ -9,6 +9,8 @@
  */
 package io.github.alimsrepo.secure.vault
 
+import kotlin.coroutines.cancellation.CancellationException
+
 /**
  * A small, coroutine-first façade over the platform's native secure storage:
  *
@@ -34,7 +36,7 @@ public interface SecureVault {
      * @throws VaultException.CryptoFailure      if encryption fails.
      * @throws VaultException.StorageUnavailable if the backend cannot be reached.
      */
-    @Throws(VaultException::class)
+    @Throws(VaultException::class, CancellationException::class)
     public suspend fun put(key: String, value: String)
 
     /**
@@ -45,7 +47,7 @@ public interface SecureVault {
      * @throws VaultException.Tampered           if the ciphertext failed an integrity check.
      * @throws VaultException.StorageUnavailable if the backend cannot be reached.
      */
-    @Throws(VaultException::class)
+    @Throws(VaultException::class, CancellationException::class)
     public suspend fun get(key: String): String?
 
     /**
@@ -54,7 +56,7 @@ public interface SecureVault {
      * @throws VaultException.InvalidKey         if [key] is blank.
      * @throws VaultException.StorageUnavailable if the backend cannot be reached.
      */
-    @Throws(VaultException::class)
+    @Throws(VaultException::class, CancellationException::class)
     public suspend fun remove(key: String)
 
     /**
@@ -63,7 +65,7 @@ public interface SecureVault {
      * @throws VaultException.InvalidKey         if [key] is blank.
      * @throws VaultException.StorageUnavailable if the backend cannot be reached.
      */
-    @Throws(VaultException::class)
+    @Throws(VaultException::class, CancellationException::class)
     public suspend fun contains(key: String): Boolean
 
     /**
@@ -71,7 +73,7 @@ public interface SecureVault {
      *
      * @throws VaultException.StorageUnavailable if the backend cannot be reached.
      */
-    @Throws(VaultException::class)
+    @Throws(VaultException::class, CancellationException::class)
     public suspend fun clear()
 
     /**
@@ -81,7 +83,7 @@ public interface SecureVault {
      *
      * @throws VaultException.StorageUnavailable if the backend cannot be reached.
      */
-    @Throws(VaultException::class)
+    @Throws(VaultException::class, CancellationException::class)
     public suspend fun keys(): Set<String>
 }
 

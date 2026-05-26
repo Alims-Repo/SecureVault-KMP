@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.androidLint)
+
     alias(libs.plugins.mavenPublish)
     alias(libs.plugins.dokka)
     alias(libs.plugins.binaryCompatibilityValidator)
@@ -66,13 +67,6 @@ mavenPublishing {
             sourcesJar = true,
         ),
     )
-
-    // Coordinates intentionally NOT set here — vanniktech reads GROUP,
-    // POM_ARTIFACT_ID and VERSION_NAME from gradle.properties automatically.
-    // Calling coordinates(...) on AGP 9.x races with the Android KMP library
-    // plugin, which finalises groupId early when registering the AAR
-    // publication, producing:
-    //   "property 'groupId$plugin' is final and cannot be changed any further".
 
     pom {
         name.set("SecureVault KMP")

@@ -10,7 +10,7 @@ package io.github.alimsrepo.secure.vault
  * iOS implementation. The Keychain is a process-wide singleton, so no
  * platform handle is required at construction time.
  */
-public actual class SecureVaultFactory public actual constructor() {
+public actual class SecureVaultFactory public constructor() {
 
     public actual fun create(config: VaultConfig): SecureVault =
         IosSecureVault(config)
