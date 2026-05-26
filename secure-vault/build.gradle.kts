@@ -62,7 +62,7 @@ mavenPublishing {
     )
 
     pom {
-        name.set("Secure Valult KMP")
+        name.set("Secure Vault KMP")
         description.set("")
         inceptionYear.set("2026")
         url.set("https://github.com/Alims-Repo/SecureVault-KMP")
