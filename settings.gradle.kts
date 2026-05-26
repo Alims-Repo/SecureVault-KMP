@@ -31,3 +31,4 @@ dependencyResolutionManagement {
 include(":androidApp")
 include(":shared")
 include(":secure-vault")
+include(":secure-vault-compose")
