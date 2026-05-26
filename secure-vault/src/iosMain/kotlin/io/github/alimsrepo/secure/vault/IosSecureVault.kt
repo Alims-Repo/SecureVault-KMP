@@ -16,6 +16,10 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import platform.CoreFoundation.CFDictionaryRef
 import platform.CoreFoundation.CFTypeRef
@@ -72,6 +76,16 @@ internal class IosSecureVault(
 
     private val service: String = config.namespace
 
+    /**
+     * Invalidation broker shared by every [IosSecureVault] that targets the
+     * same `service` (namespace). The Keychain has no native change-notification
+     * API for this process — we approximate it by emitting after every write
+     * performed *through this library*. Writes from another process or via raw
+     * `SecItem*` calls outside this library are not observed (documented in
+     * [SecureVault.observe]).
+     */
+    private val invalidations: MutableSharedFlow<Unit> = InvalidationBroker.forService(service)
+
     override suspend fun put(key: String, value: String): Unit = withContext(Dispatchers.Default) {
         requireValidKey(key)
         val data = value.toNSData()
@@ -93,6 +107,7 @@ internal class IosSecureVault(
             }
             else -> update.requireSuccess()
         }
+        invalidations.tryEmit(Unit)
     }
 
     override suspend fun get(key: String): String? = withContext(Dispatchers.Default) {
@@ -115,6 +130,7 @@ internal class IosSecureVault(
         requireValidKey(key)
         val status = SecItemDelete(baseQuery(account = key).asCF())
         if (status != errSecSuccess && status != errSecItemNotFound) status.requireSuccess()
+        invalidations.tryEmit(Unit)
     }
 
     override suspend fun contains(key: String): Boolean = withContext(Dispatchers.Default) {
@@ -129,6 +145,7 @@ internal class IosSecureVault(
     override suspend fun clear(): Unit = withContext(Dispatchers.Default) {
         val status = SecItemDelete(serviceScopedQuery().asCF())
         if (status != errSecSuccess && status != errSecItemNotFound) status.requireSuccess()
+        invalidations.tryEmit(Unit)
     }
 
     override suspend fun keys(): Set<String> = withContext(Dispatchers.Default) {
@@ -151,6 +168,17 @@ internal class IosSecureVault(
             }
         }
     }
+
+    override fun observe(key: String): Flow<String?> = flow {
+        requireValidKey(key)
+        emit(get(key))
+        invalidations.collect { emit(get(key)) }
+    }.distinctUntilChanged()
+
+    override fun observeKeys(): Flow<Set<String>> = flow {
+        emit(keys())
+        invalidations.collect { emit(keys()) }
+    }.distinctUntilChanged()
 
     // ------------------------------------------------------------------
     // Internals

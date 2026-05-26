@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.androidLint)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
 
     alias(libs.plugins.mavenPublish)
     alias(libs.plugins.dokka)
@@ -15,7 +17,6 @@ plugins {
 }
 
 kotlin {
-    // Force every public declaration to carry an explicit visibility modifier.
     explicitApi = ExplicitApiMode.Strict
 
     compilerOptions {
@@ -26,7 +27,7 @@ kotlin {
     }
 
     android {
-        namespace = "io.github.alimsrepo.secure.vault"
+        namespace = "io.github.alimsrepo.secure.vault.compose"
         compileSdk { version = release(37) }
         minSdk = 24
 
@@ -37,7 +38,7 @@ kotlin {
         }
     }
 
-    val xcfName = "SecureVaultKit"
+    val xcfName = "SecureVaultComposeKit"
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
             baseName = xcfName
@@ -47,16 +48,13 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(libs.kotlinx.coroutines.core)
+            api(project(":secure-vault"))
+            implementation(compose.runtime)
+            implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
-        }
-        androidMain.dependencies {
-            implementation(libs.androidx.security.crypto)
-            implementation(libs.androidx.startup.runtime)
-            implementation(libs.kotlinx.coroutines.android)
         }
     }
 }
@@ -69,11 +67,15 @@ mavenPublishing {
         ),
     )
 
+    // Coordinates come from secure-vault-compose/gradle.properties so the AAR
+    // publication race (groupId$plugin finalised early by AGP 9) does not bite
+    // us a second time.
+
     pom {
-        name.set("SecureVault KMP")
+        name.set("SecureVault KMP — Compose")
         description.set(
-            "A small, coroutine-first Kotlin Multiplatform library for storing " +
-                "secrets on Android (EncryptedSharedPreferences) and iOS (Keychain).",
+            "Compose Multiplatform integration for SecureVault KMP: rememberSecureVault, " +
+                "VaultState lifecycle, and a LocalSecureVault CompositionLocal.",
         )
         inceptionYear.set("2026")
         url.set("https://github.com/Alims-Repo/SecureVault-KMP")
@@ -110,3 +112,4 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
     signAllPublications()
 }
+

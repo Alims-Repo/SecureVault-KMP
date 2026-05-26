@@ -6,6 +6,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-26
+
+Theme: **Observability**. The vault becomes reactive — writes from any code
+path are visible to every collector, no manual `refresh()` boilerplate.
+
+### Core (`secure-vault`)
+
+#### Added
+- `SecureVault.observe(key: String): Flow<String?>` — cold flow that emits
+  the current value, then re-emits on every change (write, remove, clear).
+  De-duplicated against the previously emitted value.
+- `SecureVault.observeKeys(): Flow<Set<String>>` — same contract for the
+  namespace's key set; perfect for reactive lists of stored secrets.
+- Both flows clean up their listeners when the collecting coroutine is
+  cancelled. Blank keys are rejected at collect-time with
+  `VaultException.InvalidKey`.
+
+#### Implementation notes
+- **Android** — `callbackFlow` over
+  `SharedPreferences.OnSharedPreferenceChangeListener`. Handles the
+  `key == null` signal that `clear()` fires.
+- **iOS** — Keychain has no in-process notification API, so every write
+  goes through a per-namespace `MutableSharedFlow` held by an internal
+  `InvalidationBroker`. Writes performed from another process or via raw
+  `SecItem*` calls outside this library are not observed (documented in
+  the `observe` KDoc).
+
+### Compose integration (`secure-vault-compose`)
+
+#### Added
+- `@Composable fun rememberSecureValue(key, default): MutableState<String>`
+  — one-line two-way bind to a vault key. Reads come from `observe()`,
+  writes propagate via `put()`. Resolves the vault from `LocalSecureVault`
+  by default; an overload accepts an explicit vault.
+
+  ```kotlin
+  var token by rememberSecureValue("auth.token", default = "")
+  OutlinedTextField(value = token, onValueChange = { token = it })
+  ```
+
+### Tooling
+- Multi-module Dokka HTML site, aggregated at the root and emitted to
+  `docs/api/`. Deployed to GitHub Pages alongside the marketing landing
+  page by `.github/workflows/docs.yml` on every push to `main`.
+
+### Sample app
+- Dropped the manual `refreshKeys()` helper; the stored-keys list now
+  binds directly to `observeKeys().collectAsState()`.
+- Added a `rememberSecureValue` showcase card — typing into it persists
+  every keystroke; killing & relaunching the app restores it.
+
+## [0.2.0] - 2026-05-26
+
+### Core (`secure-vault`)
+
+#### Added
+- Top-level `SecureVault(config: VaultConfig)` factory function with a
+  `SecureVault(namespace, accessibility)` convenience overload. The call
+  site is identical on Android and iOS — no `Context`, no factory class.
+- Android: auto-initialisation via
+  [`androidx.startup`](https://developer.android.com/topic/libraries/app-startup).
+  The library's manifest registers an `Initializer` that captures the
+  application `Context` before `Application.onCreate()` returns, so
+  consumers do not need to plumb a context themselves.
+- `SecureVault.initialize(context)` escape hatch for consumers who disable
+  the Startup integration.
+- `SecureVault.Companion` namespace on the interface so platform-specific
+  initialisation hooks (currently Android-only) live in a discoverable place.
+
+#### Changed
+- `androidx.startup:startup-runtime:1.2.0` added as a transitive dependency
+  on Android. ~5 KB minified.
+
+#### Deprecated
+- `SecureVaultFactory` (Android `SecureVaultFactory(context)`, iOS
+  `SecureVaultFactory()`). Replaced by the top-level `SecureVault(config)`
+  factory function. Will be removed in **0.3.0**. Source-compatible —
+  consumers see a warning with an auto-replacement.
+
+#### Migration
+```diff
+- val factory = SecureVaultFactory(context)
+- val vault = factory.create(VaultConfig("com.acme.auth"))
++ val vault = SecureVault("com.acme.auth")
+```
+
+### Compose integration (`secure-vault-compose`) — new
+
+Optional Compose Multiplatform helpers, published separately as
+`io.github.alims-repo:secure-vault-compose`. Both artifacts share the same
+version line going forward — tag once, publish both.
+
+#### Added
+- `VaultState` sealed interface (`Initializing` / `Ready(vault)` /
+  `Failed(reason)`) — surfaces the platform's master-key handshake as
+  explicit UI state.
+- `@Composable fun rememberSecureVault(config)` plus
+  `(namespace, accessibility)` convenience overload. Returns
+  `State<VaultState>`; the underlying host is a process-wide singleton
+  keyed by `VaultConfig.namespace`, pre-warmed on `Dispatchers.Default`
+  inside its constructor coroutine so the user's first interaction never
+  pays the Keystore cost.
+- `LocalSecureVault: ProvidableCompositionLocal<SecureVault>` with no
+  default value (clear error if read outside a provider scope).
+- `ProvideSecureVault(vault) { content }` helper.
+
+#### Notes
+- Runtime-only Compose dep (`compose.runtime`); the artifact does **not**
+  pull in Material or any UI library.
+
 ## [0.1.0] - 2026-05-26
 ### Added
 - Initial public API:
@@ -34,6 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enforcement (biometric prompt) is tracked for v0.2.
 - No JVM/Desktop target yet; planned for v0.2.
 
-[Unreleased]: https://github.com/Alims-Repo/SecureVault-KMP/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Alims-Repo/SecureVault-KMP/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Alims-Repo/SecureVault-KMP/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Alims-Repo/SecureVault-KMP/releases/tag/v0.1.0
 

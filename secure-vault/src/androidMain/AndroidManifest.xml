@@ -1,4 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+    AndroidX App Startup integration. The InitializationProvider is contributed
+    by androidx.startup; we merge our SecureVaultStartup initializer into it so
+    the application Context is captured before Application.onCreate() returns.
+
+    Consumers who want to opt out can do so per-initializer:
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="merge">
+            <meta-data
+                android:name="io.github.alimsrepo.secure.vault.internal.SecureVaultStartup"
+                tools:node="remove" />
+        </provider>
+
+    They must then call SecureVault.initialize(applicationContext) themselves.
+    -->
+    <application>
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="io.github.alimsrepo.secure.vault.internal.SecureVaultStartup"
+                android:value="androidx.startup" />
+        </provider>
+    </application>
 </manifest>

@@ -10,6 +10,7 @@
 package io.github.alimsrepo.secure.vault
 
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.flow.Flow
 
 /**
  * A small, coroutine-first façade over the platform's native secure storage:
@@ -85,5 +86,51 @@ public interface SecureVault {
      */
     @Throws(VaultException::class, CancellationException::class)
     public suspend fun keys(): Set<String>
-}
 
+    /**
+     * Returns a cold [Flow] that emits the current value of [key] and then
+     * re-emits whenever that key is written, removed, or the vault is cleared.
+     *
+     * Semantics:
+     * * The first emission is the value present at collection start (or `null`).
+     * * Subsequent emissions are de-duplicated against the previously emitted
+     *   value — collectors only see real changes.
+     * * The flow never completes on its own; cancel the collecting coroutine
+     *   to unregister the underlying listener.
+     *
+     * Platform notes:
+     * * **Android** — backed by `SharedPreferences.OnSharedPreferenceChangeListener`;
+     *   sees writes from any code holding the same prefs file.
+     * * **iOS** — backed by an in-process broker. Writes performed from
+     *   *another* process, or via raw `SecItem*` calls outside this library,
+     *   are **not** observed.
+     *
+     * Throws [VaultException.InvalidKey] at collection time if [key] is blank.
+     *
+     * @since 0.3.0
+     */
+    public fun observe(key: String): Flow<String?>
+
+    /**
+     * Returns a cold [Flow] that emits the current key set and then re-emits
+     * a fresh snapshot whenever the set changes (write of a new key, remove,
+     * or [clear]).
+     *
+     * Same de-duplication and platform caveats as [observe]. Useful for
+     * building reactive UIs over the vault (e.g. listing stored secrets).
+     *
+     * @since 0.3.0
+     */
+    public fun observeKeys(): Flow<Set<String>>
+
+    /**
+     * Companion namespace for platform-specific initialisation hooks.
+     *
+     * On commonMain it is empty; platforms may add extension functions
+     * (e.g. `SecureVault.initialize(context)` on Android). This keeps
+     * platform-only call sites discoverable while leaving shared code clean.
+     *
+     * @since 0.2.0
+     */
+    public companion object
+}

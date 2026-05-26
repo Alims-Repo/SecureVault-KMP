@@ -504,7 +504,7 @@
         <div class="container">
             <div class="badge-row">
                 <span class="badge-dot"></span>
-                v0.1.0 — Now on Maven Central
+                v0.3.0 — Now on Maven Central
             </div>
             <h1 class="hero-title">Secrets storage,<br/>done right for KMP.</h1>
             <p class="hero-sub">
@@ -517,6 +517,10 @@
                 <a class="btn btn-primary" href="#install">
                     Get started
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+                </a>
+                <a class="btn btn-secondary" href="api/index.html">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    API reference
                 </a>
                 <a class="btn btn-secondary" href="https://github.com/Alims-Repo/SecureVault-KMP" target="_blank" rel="noopener">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.7-3.88-1.54-3.88-1.54-.52-1.34-1.27-1.7-1.27-1.7-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.27-5.23-5.67 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.17a11 11 0 0 1 5.79 0c2.2-1.48 3.17-1.17 3.17-1.17.63 1.59.23 2.76.12 3.05.74.8 1.18 1.82 1.18 3.07 0 4.41-2.69 5.37-5.25 5.66.41.35.78 1.05.78 2.12v3.14c0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
@@ -536,19 +540,23 @@
 
                     <div class="install-panel active" data-panel="kts">
 <pre class="flush"><span class="tk-key">dependencies</span> {
-    <span class="tk-fun">implementation</span>(<span class="tk-str">"io.github.alimsrepo:secure-vault:0.1.0"</span>)
+    <span class="tk-fun">implementation</span>(<span class="tk-str">"io.github.alims-repo:secure-vault:0.3.0"</span>)
+    <span class="tk-com">// Optional — Compose Multiplatform helpers:</span>
+    <span class="tk-fun">implementation</span>(<span class="tk-str">"io.github.alims-repo:secure-vault-compose:0.3.0"</span>)
 }</pre>
                     </div>
 
                     <div class="install-panel" data-panel="catalog">
 <pre class="flush"><span class="tk-com"># gradle/libs.versions.toml</span>
 <span class="tk-key">[libraries]</span>
-<span class="tk-fun">secure-vault</span> = { <span class="tk-key">module</span> = <span class="tk-str">"io.github.alimsrepo:secure-vault"</span>, <span class="tk-key">version</span> = <span class="tk-str">"0.1.0"</span> }</pre>
+<span class="tk-fun">secure-vault</span> = { <span class="tk-key">module</span> = <span class="tk-str">"io.github.alims-repo:secure-vault"</span>, <span class="tk-key">version</span> = <span class="tk-str">"0.3.0"</span> }
+<span class="tk-fun">secure-vault-compose</span> = { <span class="tk-key">module</span> = <span class="tk-str">"io.github.alims-repo:secure-vault-compose"</span>, <span class="tk-key">version</span> = <span class="tk-str">"0.3.0"</span> }</pre>
                     </div>
 
                     <div class="install-panel" data-panel="groovy">
 <pre class="flush"><span class="tk-key">dependencies</span> {
-    <span class="tk-fun">implementation</span> <span class="tk-str">'io.github.alimsrepo:secure-vault:0.1.0'</span>
+    <span class="tk-fun">implementation</span> <span class="tk-str">'io.github.alims-repo:secure-vault:0.3.0'</span>
+    <span class="tk-fun">implementation</span> <span class="tk-str">'io.github.alims-repo:secure-vault-compose:0.3.0'</span>
 }</pre>
                     </div>
                 </div>
@@ -635,7 +643,7 @@
             <div class="section-eyebrow">Usage</div>
             <h2 class="section-title">One API. Two native backends.</h2>
             <p class="section-sub">
-                Write your business logic against <code class="inline">SecureVault</code> in <code class="inline">commonMain</code>. Build the right factory once per platform.
+                Write your business logic against <code class="inline">SecureVault</code> in <code class="inline">commonMain</code>. One factory call, identical on every target.
             </p>
 
             <div class="split">
@@ -668,8 +676,8 @@
 <pre class="flush"><span class="tk-key">class</span> <span class="tk-type">App</span> : <span class="tk-type">Application</span>() {
     <span class="tk-key">override fun</span> <span class="tk-fun">onCreate</span>() {
         <span class="tk-key">super</span>.<span class="tk-fun">onCreate</span>()
-        <span class="tk-key">val</span> vault = <span class="tk-type">SecureVaultFactory</span>(<span class="tk-key">this</span>)
-            .<span class="tk-fun">create</span>(<span class="tk-type">VaultConfig</span>(<span class="tk-str">"com.acme.auth"</span>))
+        <span class="tk-com">// no Context plumbing — captured via androidx.startup</span>
+        <span class="tk-key">val</span> vault = <span class="tk-fun">SecureVault</span>(<span class="tk-str">"com.acme.auth"</span>)
     }
 }</pre>
                     </div>
@@ -678,11 +686,9 @@
                             <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
                             <span class="filename">iosApp/ContentView.swift</span>
                         </div>
-<pre class="flush"><span class="tk-key">let</span> vault = <span class="tk-type">SecureVaultFactory</span>().<span class="tk-fun">create</span>(
-    config: <span class="tk-type">VaultConfig</span>(
-        namespace: <span class="tk-str">"com.acme.auth"</span>,
-        accessibility: .<span class="tk-fun">afterFirstUnlock</span>
-    )
+<pre class="flush"><span class="tk-key">let</span> vault = <span class="tk-type">SecureVaultsKt</span>.<span class="tk-fun">SecureVault</span>(
+    namespace: <span class="tk-str">"com.acme.auth"</span>,
+    accessibility: .<span class="tk-fun">afterFirstUnlock</span>
 )</pre>
                     </div>
                 </div>
@@ -753,7 +759,7 @@
         </div>
         <div class="footer-links">
             <a href="https://github.com/Alims-Repo/SecureVault-KMP">GitHub</a>
-            <a href="https://central.sonatype.com/artifact/io.github.alimsrepo/secure-vault">Maven Central</a>
+            <a href="https://central.sonatype.com/artifact/io.github.alims-repo/secure-vault">Maven Central</a>
             <a href="https://github.com/Alims-Repo/SecureVault-KMP/blob/main/CHANGELOG.md">Changelog</a>
             <a href="https://github.com/Alims-Repo/SecureVault-KMP/blob/main/SECURITY.md">Security</a>
         </div>
